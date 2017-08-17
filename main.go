@@ -14,6 +14,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	//there as a  doc handle  lib
 	"github.com/gchaincl/dotsql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kr/pretty"
@@ -22,24 +23,31 @@ import (
 //VERSION defines the version number of this program
 const VERSION string = "1.0.0"
 
+//defind  error format
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
 	}
 }
+
+//*couchdb.Client define  指针变量
 func getChanges(client *couchdb.Client, dbname string, since string) (*couchdb.Changes, error) {
 	//db, err := client.EnsureDB(dbname)
+	// into  client 指针 to DB struct
 	db, err := client.DB(dbname)
 	failOnError(err, "Failed to connect to "+dbname)
 	return db.NormalChanges(since)
 }
 
+//error  handler method
 func panicOnError(err error) {
 	if err != nil {
 
 		panic(err)
 	}
 }
+
+//异常处理 跳过error task  go ahead other task
 func forever(fn func()) {
 	f := func() {
 		defer func() {
@@ -54,16 +62,22 @@ func forever(fn func()) {
 		f()
 	}
 }
+
+//inert mysql   326 line
 func doOrder(db *sql.DB, order oc.OrderJSON) error {
+	// define  statements value of db  column values
 	statements := order.Do(db)
 	tx, err := db.Begin()
 	failOnError(err, "Failed to begine transaction")
+	//defer  when the program  exit  beford  will  exec tx.Rollback()
 	defer tx.Rollback()
 	for _, stmt := range statements {
+		pretty.Println("xxx", stmt)
 		_, err := tx.Exec(stmt)
 		failOnError(err, "Failed to exec "+stmt)
 	}
 	pretty.Println("Commit transaction", order.Order.OrderInfo.OrderID)
+	// pretty.Println("Commit transaction", order)
 	return tx.Commit()
 }
 
@@ -71,7 +85,7 @@ const seqPrefixLen = 20
 
 //INI_SQL defines the sql statements for creating tables
 const INI_SQL = `
--- name: use-oc 
+-- name: use-oc
 USE oc;
 -- name: set-encoding
 SET NAMES utf8mb4;
@@ -79,7 +93,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 -- name: drop-order-discount
 DROP TABLE IF EXISTS order_discount;
--- name: create-order-discount 
+-- name: create-order-discount
 CREATE TABLE order_discount (
   id int(11) NOT NULL AUTO_INCREMENT COMMENT '编号',
   orderId varchar(50) NOT NULL COMMENT '订单ID',
@@ -251,6 +265,8 @@ CREATE TABLE shift_seq (
 SET FOREIGN_KEY_CHECKS = 1;`
 
 func handleOrders() {
+	// open a   connection of  database
+	// the logger its  connect couchdb and mysql over ssh  of   logger  module and then it will open the tunnel  to connect db
 	lg, err := logger.New("order_seq")
 	failOnError(err, "Failed to open database")
 	defer lg.Close()
@@ -258,6 +274,7 @@ func handleOrders() {
 		pretty.Println("Initialize database")
 		dot, err := dotsql.LoadFromString(INI_SQL)
 		failOnError(err, "Failed to initialize database")
+		//open the database connection  lg.DB()
 		dot.Exec(lg.DB(), "use-oc")
 		dot.Exec(lg.DB(), "set-encoding")
 		dot.Exec(lg.DB(), "disable-foreign-key")
@@ -275,22 +292,29 @@ func handleOrders() {
 		dot.Exec(lg.DB(), "create-shift-seq")
 		dot.Exec(lg.DB(), "enable-foreign-key")
 	}
+	// get the table the last seq
 	seq, err := lg.Seq()
 	failOnError(err, "Failed to get latest sequence number")
 	err = lg.Clean()
 	failOnError(err, "Failed to clean up log")
+	// until ioop
 	for {
-		d, _ := time.ParseDuration("5s")
+		d, _ := time.ParseDuration("3s")
 		time.Sleep(d)
+		// null 指针  store any  values
 		couchcfg := make(map[string]interface{})
 		err := config.Get("$.couchdb+", &couchcfg)
 		failOnError(err, "Empty CouchDB configuration")
+		// get the conf.json configuration to  connect couchdb
 		client, err := couchdb.New(couchcfg["url"].(string), couchcfg["username"].(string), couchcfg["password"].(string))
 		failOnError(err, "Failed to connect to CouchDB")
 		ch, err := getChanges(client, "orders", seq)
 		failOnError(err, "Failed to get changes of orders")
+		//get the orders result
 		for _, c := range ch.Results {
+			//get the  dict
 			var dst oc.OrderJSON
+			pretty.Println("a:", dst)
 			err = json.Unmarshal(c.Doc, &dst)
 			if (err != nil) || (dst.Order.OrderInfo.OrderID == "") {
 				seq = string(c.Seq)
@@ -307,10 +331,12 @@ func handleOrders() {
 				}
 				continue
 			}
+			//insert mysql,if  not err  then update  the   `order_seq table log`  263 line
 			err = doOrder(lg.DB(), dst)
 			if err == nil {
 				seq = string(c.Seq)
 				pretty.Println("Handle doc successfully", c.ID, seq[:seqPrefixLen])
+				// there has a  connect of order_seq table
 				err = lg.Update(seq, c.ID, errors.New("Success"))
 				if err != nil {
 					pretty.Println(err, seq[:seqPrefixLen])

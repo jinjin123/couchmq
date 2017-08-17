@@ -33,62 +33,78 @@ func toList(data interface{}, useFields []string) (string, []string, []string) {
 			useFieldsCache[f] = true
 		}
 	}
+	//get the data type
 	typ := reflect.TypeOf(data)
 	val := reflect.ValueOf(data)
 	var tableName string
 	var fieldName string
 	sqlField := make([]string, 0, typ.NumField())
 	valField := make([]string, 0, typ.NumField())
+	pretty.Println("sqlField:", sqlField)
+	pretty.Println("valField:", valField)
+	pretty.Println("valField:", typ.NumField())
 	for i := 0; i < typ.NumField(); i++ {
 		tfld := typ.Field(i)
 		vfld := val.Field(i)
 		ts, ok := tfld.Tag.Lookup("oc")
+		pretty.Println("ts:", ts)
 		if ok {
 			tableName = ts
+			pretty.Println("tablename:", tableName)
 		}
 		_, has := useFieldsCache[tfld.Name]
+		pretty.Println("hasFieldcacheone?:", tfld.Name)
 		if (len(useFields) > 0) && !has {
+			pretty.Println("useFields:", useFields)
 			continue
 		}
 		switch vfld.Kind() {
 		case reflect.Int:
 			{
 				fieldName, ok = tfld.Tag.Lookup("field")
+				pretty.Println("fieldName65:", fieldName)
 				if ok {
+					//41 line  has define a array
 					sqlField = append(sqlField, fieldName)
 				} else {
 					sqlField = append(sqlField, tfld.Name)
 				}
 				valField = append(valField, strconv.FormatInt(vfld.Int(), 10))
+				pretty.Println("valField73:", valField)
 			}
 		case reflect.String:
 			{
 				fieldName, ok = tfld.Tag.Lookup("field")
+				pretty.Println("fieldName78:", fieldName)
 				if ok {
 					sqlField = append(sqlField, fieldName)
 				} else {
 					sqlField = append(sqlField, tfld.Name)
 				}
 				valField = append(valField, "'"+vfld.String()+"'")
+				pretty.Println("valField85:", valField)
 			}
 		case reflect.Struct:
 			{
 				if tfld.Type.String() == "time.Time" {
 					fieldName, ok = tfld.Tag.Lookup("field")
+					pretty.Println("fieldName91:", fieldName)
 					if ok {
 						sqlField = append(sqlField, fieldName)
 					} else {
 						sqlField = append(sqlField, tfld.Name)
 					}
 					valField = append(valField, "'"+vfld.Interface().(time.Time).Format(ocTimeLayout)+"'")
+					pretty.Println("valField98:", valField)
 				} else {
-					panic("Cannot handle field type " + tfld.Name + ":" + tfld.Type.String())
+					panic("Cannot handle field type 100" + tfld.Name + ":" + tfld.Type.String())
 				}
 			}
 		default:
-			panic("Cannot handle field type " + tfld.Name + ":" + tfld.Type.String())
+			panic("Cannot handle field type 104" + tfld.Name + ":" + tfld.Type.String())
 		}
 	}
+	pretty.Println("107 all:", tableName, sqlField, valField)
 	return tableName, sqlField, valField
 }
 
@@ -146,6 +162,7 @@ func (s Struct2SQL) Select(data interface{}, where interface{}, fields []string)
 }
 
 //Discount correspondes to order_discount table
+// `` 表示tag
 type Discount struct {
 	orderId         string `oc:"order_discount"`
 	discountId      int

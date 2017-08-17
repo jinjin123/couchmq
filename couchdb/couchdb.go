@@ -27,33 +27,44 @@ type DB struct {
 //New returns a new instance of Client
 func New(rawurl string, username string, password string) (*Client, error) {
 	u, err := url.Parse(rawurl)
+	//init  struct  with  url
+	// take the args into stuct
 	if err == nil {
 		client := Client{
 			Username: username,
 			Password: password,
 			URL:      u,
 		}
+		// return 指针  address, and err = nil
 		return &client, nil
 	}
+	// err != nil return  client connet = nil  with err information
 	return nil, err
 }
 
 //DB returns a database in a given CouchDB instance
+//into couchdb 指针  to init DB struct
 func (c *Client) DB(name string) (*DB, error) {
+	//Parse dbname http://test-couchdb-cloud.gtdx.liansuola.com/pos
 	r, err := url.Parse(name)
 	if err == nil {
 		db := DB{
+			//couchdb login auth 指针
 			client: c,
-			Name:   r.Path,
+			//dbname  of url path   http://test-couchdb-cloud.gtdx.liansuola.com/pos
+			Name: r.Path,
 		}
+		//return db 指针 address with  error = nil
 		return &db, nil
 	}
+	//return db 指针 ddress = nil with  error
 	return nil, err
 }
 
 // Sequence represents update sequence ID. It is string in 2.0, integer in previous versions.
 // Use a new type to attach a customized unmarshaler
 // code borrowed from kivik
+//switch unicode
 type Sequence string
 
 // UnmarshalJSON satisfies the json.Unmarshaler interface.

@@ -1,20 +1,20 @@
 {
     "couchdb": {
-        "url": "http://52.80.38.62:5984",
+        "url": "http://test-couchdb-cloud.gtdx.liansuola.com:80",
         "username": "ymeng",
         "password": "111111"
     },
     "mysql": {
-        "ssh": {
-            "host": "54.223.176.133",
-            "port": 22,
-            "username": "kenlin",
-            "password": "thomas123"
-        },
-        "host": "sm12g5l9d32eyun.cjwa2zciaejp.rds.cn-north-1.amazonaws.com.cn",
+          "ssh": {
+           "host": "127.0.0.1",
+           "port": 22,
+           "username": "wupeijin",
+           "password": "jinjin123"
+       },
+        "host": "127.0.0.1",
         "port": 3306,
-        "username": "keithyau",
-        "password": "thomas123",
-        "database": "oc"
+        "username": "root",
+        "password": "jinjin123",
+        "database": "oc2"
     }
 }

@@ -22,6 +22,7 @@ func seq2index(seq string) (int, error) {
 }
 
 //New creates log database and create sequence table
+//load configuration to connect db
 func New(tbl string) (*Logger, error) {
 	sql := make(map[string]interface{})
 	err := config.Get("$.mysql+", &sql)
@@ -117,6 +118,7 @@ func (log *Logger) MaxID() (int, error) {
 			return 1, nil
 		}
 	}
+	//query the max function of mysql self
 	rows, err := log.db.Query(fmt.Sprintf("SELECT MAX(id) FROM %s", log.table))
 	if err == nil {
 		defer rows.Close()
